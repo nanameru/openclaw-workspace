@@ -11,6 +11,46 @@ import type { SupportedProvider } from "@/lib/url";
 const execFileAsync = promisify(execFile);
 const normalizeText = (input: string): string => input.replace(/\s+/g, " ").trim();
 
+const REMOTE_EXTRACTOR_URL = process.env.EXTRACTOR_API_URL;
+const REMOTE_EXTRACTOR_TOKEN = process.env.EXTRACTOR_API_TOKEN;
+
+type RemoteTranscriptResponse = {
+  text: string;
+  language?: string;
+  engine?: string;
+  warnings?: string[];
+};
+
+const fetchRemoteTranscript = async (
+  provider: SupportedProvider,
+  url: string
+): Promise<TranscriptResult | null> => {
+  if (!REMOTE_EXTRACTOR_URL) return null;
+
+  const res = await fetch(`${REMOTE_EXTRACTOR_URL.replace(/\/$/, "")}/transcribe`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(REMOTE_EXTRACTOR_TOKEN ? { Authorization: `Bearer ${REMOTE_EXTRACTOR_TOKEN}` } : {})
+    },
+    body: JSON.stringify({ provider, url })
+  });
+
+  if (!res.ok) {
+    throw new Error(`remote_extractor_failed:${res.status}`);
+  }
+
+  const data = (await res.json()) as RemoteTranscriptResponse;
+  return {
+    provider,
+    sourceUrl: url,
+    language: data.language ?? "auto",
+    text: data.text,
+    segments: [{ start: 0, dur: 0, text: data.text }],
+    warnings: data.warnings ?? ["Railway extractor経由で文字起こししました。"]
+  };
+};
+
 const transcribeWithDeepgram = async (audioPath: string): Promise<string> => {
   const apiKey = process.env.DEEPGRAM_API_KEY;
   if (!apiKey) throw new Error("DEEPGRAM_API_KEY が未設定です");
@@ -100,6 +140,14 @@ export const fetchYouTubeTranscript = async (url: string): Promise<TranscriptRes
       warnings: []
     };
   } catch {
+    const remote = await fetchRemoteTranscript("youtube", url).catch(() => null);
+    if (remote) {
+      return {
+        ...remote,
+        warnings: ["字幕取得に失敗したためRailway extractorにフォールバックしました。", ...remote.warnings]
+      };
+    }
+
     const audioPath = await downloadAudioWithYtDlp(url);
     const { text, provider } = await transcribeAudio(audioPath);
 
@@ -116,6 +164,9 @@ export const fetchYouTubeTranscript = async (url: string): Promise<TranscriptRes
 
 export const fetchXTranscript = async (url: string): Promise<TranscriptResult> => {
   try {
+    const remote = await fetchRemoteTranscript("x", url).catch(() => null);
+    if (remote) return remote;
+
     const audioPath = await downloadAudioWithYtDlp(url);
     const { text, provider } = await transcribeAudio(audioPath);
 
@@ -149,6 +200,9 @@ export const fetchGenericTranscript = async (
   url: string
 ): Promise<TranscriptResult> => {
   try {
+    const remote = await fetchRemoteTranscript(socialProvider, url).catch(() => null);
+    if (remote) return remote;
+
     const audioPath = await downloadAudioWithYtDlp(url);
     const { text, provider } = await transcribeAudio(audioPath);
 
