@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { detectProvider, safeUrl } from "@/lib/url";
 import { fetchYouTubeTranscript, fetchXTranscript } from "@/lib/transcript";
+import { saveTranscriptIfConfigured } from "@/lib/transcript-store";
 
 export const runtime = "nodejs";
 
@@ -23,6 +24,11 @@ export const POST = async (req: Request) => {
     const result = provider === "youtube"
       ? await fetchYouTubeTranscript(normalized)
       : await fetchXTranscript(normalized);
+
+    const saved = await saveTranscriptIfConfigured({ result });
+    if (!saved.saved) {
+      result.warnings = [...result.warnings, `保存スキップ: ${saved.reason}`];
+    }
 
     return NextResponse.json(result);
   } catch (error) {
