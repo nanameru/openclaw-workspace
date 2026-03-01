@@ -6,6 +6,7 @@ import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { TranscriptResult } from "@/lib/types";
+import type { SupportedProvider } from "@/lib/url";
 
 const execFileAsync = promisify(execFile);
 const normalizeText = (input: string): string => input.replace(/\s+/g, " ").trim();
@@ -139,6 +140,34 @@ export const fetchXTranscript = async (url: string): Promise<TranscriptResult> =
       warnings: isYtDlpMissing
         ? ["現在のサーバー環境でX動画取得設定が不足しています。運用環境にyt-dlpを導入して再実行してください。"]
         : ["X動画の取得または文字起こしに失敗しました。時間をおいて再試行してください。"]
+    };
+  }
+};
+
+export const fetchGenericTranscript = async (
+  socialProvider: Exclude<SupportedProvider, "youtube" | "x">,
+  url: string
+): Promise<TranscriptResult> => {
+  try {
+    const audioPath = await downloadAudioWithYtDlp(url);
+    const { text, provider } = await transcribeAudio(audioPath);
+
+    return {
+      provider: socialProvider,
+      sourceUrl: url,
+      language: "auto",
+      text,
+      segments: [{ start: 0, dur: 0, text }],
+      warnings: [`${socialProvider}は取得制約により失敗する場合があります。転写: ${provider}`]
+    };
+  } catch {
+    return {
+      provider: socialProvider,
+      sourceUrl: url,
+      language: "auto",
+      text: `${socialProvider}動画の取得または文字起こしに失敗しました。`,
+      segments: [{ start: 0, dur: 0, text: "失敗" }],
+      warnings: ["このURLは現在のサーバー環境では取得できない可能性があります。別URLで再試行してください。"]
     };
   }
 };

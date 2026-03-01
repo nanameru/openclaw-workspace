@@ -1,4 +1,4 @@
-export type TranscriptProvider = "youtube" | "x";
+export type TranscriptProvider = "youtube" | "x" | "tiktok" | "instagram" | "facebook";
 
 export type TranscriptSegment = {
   start: number;

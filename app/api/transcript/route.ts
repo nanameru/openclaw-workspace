@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { detectProvider, safeUrl } from "@/lib/url";
-import { fetchYouTubeTranscript, fetchXTranscript } from "@/lib/transcript";
+import { fetchYouTubeTranscript, fetchXTranscript, fetchGenericTranscript } from "@/lib/transcript";
 import { saveTranscriptIfConfigured } from "@/lib/transcript-store";
 
 export const runtime = "nodejs";
@@ -18,12 +18,14 @@ export const POST = async (req: Request) => {
     const provider = detectProvider(normalized);
 
     if (!provider) {
-      return NextResponse.json({ error: "YouTube/XのURLのみ対応" }, { status: 400 });
+      return NextResponse.json({ error: "未対応URLです。YouTube / X / TikTok / Instagram / Facebook に対応しています。" }, { status: 400 });
     }
 
     const result = provider === "youtube"
       ? await fetchYouTubeTranscript(normalized)
-      : await fetchXTranscript(normalized);
+      : provider === "x"
+        ? await fetchXTranscript(normalized)
+        : await fetchGenericTranscript(provider, normalized);
 
     await saveTranscriptIfConfigured({ result });
 

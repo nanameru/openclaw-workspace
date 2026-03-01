@@ -1,42 +1,64 @@
 "use client";
 
-import { useState } from "react";
-
-const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+import { useMemo, useState } from "react";
 
 type ApiResult = {
+  provider: "youtube" | "x" | "tiktok" | "instagram" | "facebook";
   text: string;
   warnings: string[];
   sourceUrl: string;
 };
+
+type HistoryItem = {
+  id: string;
+  provider: ApiResult["provider"];
+  sourceUrl: string;
+  createdAt: string;
+  textPreview: string;
+};
+
+const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+const providers = ["youtube", "x", "tiktok", "instagram", "facebook"] as const;
 
 const HomePage = () => {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ApiResult | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
 
   const run = async () => {
     setLoading(true);
     setError("");
-    setResult(null);
 
-    const res = await fetch("/api/transcript", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url })
-    });
+    try {
+      const res = await fetch("/api/transcript", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+      });
 
-    const data = (await res.json()) as ApiResult & { error?: string };
+      const data = (await res.json()) as ApiResult & { error?: string };
 
-    if (!res.ok) {
-      setError(data.error ?? "失敗しました");
+      if (!res.ok) {
+        setError(data.error ?? "失敗しました");
+        return;
+      }
+
+      setResult(data);
+      setHistory((prev) => [
+        {
+          id: crypto.randomUUID(),
+          provider: data.provider,
+          sourceUrl: data.sourceUrl,
+          createdAt: new Date().toLocaleString("ja-JP"),
+          textPreview: data.text.slice(0, 60)
+        },
+        ...prev
+      ].slice(0, 8));
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setResult(data);
-    setLoading(false);
   };
 
   const copy = async () => {
@@ -49,105 +71,107 @@ const HomePage = () => {
     const blob = new Blob([result.text], { type: "text/plain;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "transcript.txt";
+    a.download = `${result.provider}-transcript.txt`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
 
+  const statusLabel = useMemo(() => {
+    if (loading) return "解析中";
+    if (result) return "完了";
+    return "待機中";
+  }, [loading, result]);
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-white px-4 py-10">
-      <div className="mx-auto max-w-5xl">
-        <section className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-xl shadow-slate-200/60 backdrop-blur md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
-                JP Transcript
-              </p>
-              <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
-                YouTube / X URL から
-                <br className="hidden md:block" />
-                文字起こしをワンクリック取得
-              </h1>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                URLを貼って実行するだけ。取得したテキストはそのままコピー・TXT保存できます。
-              </p>
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="mx-auto grid min-h-screen max-w-7xl grid-cols-1 gap-6 p-4 lg:grid-cols-[260px_1fr] lg:p-6">
+        <aside className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">JP Transcript</p>
+          <h1 className="mt-2 text-xl font-semibold">Link to Text Studio</h1>
+          <p className="mt-2 text-sm text-slate-400">動画URLを貼るだけで、文字起こし・コピー・出力まで完了。</p>
+
+          <div className="mt-5 space-y-2 text-sm">
+            <div className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span className="text-slate-400">ステータス</span>
+              <span className="font-medium">{statusLabel}</span>
             </div>
-            <span className="h-fit rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-              {clerkEnabled ? "認証ON" : "認証OFF（環境変数未設定）"}
-            </span>
+            <div className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span className="text-slate-400">認証</span>
+              <span className="font-medium">{clerkEnabled ? "ON" : "OFF"}</span>
+            </div>
           </div>
 
-          <div className="mt-7 grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_auto] md:items-center">
-            <div>
-              <label htmlFor="url" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Video URL
-              </label>
+          <h2 className="mt-6 text-xs uppercase tracking-[0.18em] text-slate-500">対応ソース</h2>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {providers.map((provider) => (
+              <span key={provider} className="rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-200">
+                {provider}
+              </span>
+            ))}
+          </div>
+
+          <h2 className="mt-6 text-xs uppercase tracking-[0.18em] text-slate-500">最近の実行</h2>
+          <ul className="mt-2 space-y-2">
+            {history.length === 0 ? (
+              <li className="rounded-lg border border-slate-800 p-3 text-xs text-slate-500">まだ履歴がありません</li>
+            ) : history.map((item) => (
+              <li key={item.id} className="rounded-lg border border-slate-800 bg-slate-900 p-3 text-xs">
+                <div className="font-medium uppercase text-slate-300">{item.provider}</div>
+                <div className="mt-1 line-clamp-1 text-slate-400">{item.textPreview || "(空)"}</div>
+                <div className="mt-1 text-[11px] text-slate-500">{item.createdAt}</div>
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 lg:p-7">
+          <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+            <p className="text-sm text-slate-300">URL入力</p>
+            <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto]">
               <input
-                id="url"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                className="h-12 rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm outline-none ring-0 transition focus:border-indigo-400"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=..."
+                placeholder="https://..."
               />
+              <button
+                className="h-12 rounded-xl bg-indigo-500 px-5 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={run}
+                disabled={loading || !url}
+              >
+                {loading ? "解析中..." : "テキスト化する"}
+              </button>
             </div>
-            <button
-              className="h-12 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={run}
-              disabled={loading || !url}
-            >
-              {loading ? "処理中..." : "文字起こし開始"}
-            </button>
+            {error ? (
+              <p className="mt-3 rounded-lg border border-rose-800 bg-rose-950/50 px-3 py-2 text-sm text-rose-200">{error}</p>
+            ) : null}
           </div>
 
-          {error ? (
-            <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </p>
-          ) : null}
-
-          <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-500">
-            <span className="rounded-full border border-slate-300 bg-white px-3 py-1">高速取得</span>
-            <span className="rounded-full border border-slate-300 bg-white px-3 py-1">TXTエクスポート</span>
-            <span className="rounded-full border border-slate-300 bg-white px-3 py-1">利用規約・著作権順守</span>
-          </div>
-        </section>
-
-        {result ? (
-          <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-lg md:p-8">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="mt-5 rounded-2xl border border-slate-700 bg-slate-950/70 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Transcript Result</p>
-                <p className="mt-1 text-sm text-slate-600">Source: {result.sourceUrl}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Transcript Result</p>
+                <p className="mt-1 text-sm text-slate-300">
+                  Source: {result?.sourceUrl ?? "未実行"}
+                </p>
               </div>
               <div className="flex gap-2">
-                <button
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                  onClick={copy}
-                >
-                  Copy
-                </button>
-                <button
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                  onClick={download}
-                >
-                  Export TXT
-                </button>
+                <button onClick={copy} className="rounded-lg border border-slate-600 px-3 py-2 text-sm">Copy</button>
+                <button onClick={download} className="rounded-lg border border-slate-600 px-3 py-2 text-sm">Export TXT</button>
               </div>
             </div>
 
-            {result.warnings?.length ? (
-              <ul className="mt-4 list-disc rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800">
-                {result.warnings.map((w) => (
-                  <li key={w}>{w}</li>
-                ))}
+            {result?.warnings?.length ? (
+              <ul className="mt-3 list-disc rounded-lg border border-amber-800 bg-amber-950/50 px-5 py-3 text-sm text-amber-200">
+                {result.warnings.map((warning) => <li key={warning}>{warning}</li>)}
               </ul>
             ) : null}
 
-            <pre className="mt-4 max-h-[30rem] overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-800">
-              {result.text}
+            <pre className="mt-3 max-h-[520px] overflow-auto rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm leading-6 text-slate-200">
+              {result?.text ?? "ここに文字起こし結果が表示されます。"}
             </pre>
-          </section>
-        ) : null}
+          </div>
+        </section>
       </div>
     </main>
   );
