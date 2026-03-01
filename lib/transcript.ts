@@ -10,7 +10,39 @@ import type { TranscriptResult } from "@/lib/types";
 const execFileAsync = promisify(execFile);
 const normalizeText = (input: string): string => input.replace(/\s+/g, " ").trim();
 
-const transcribeWithWhisper = async (audioPath: string): Promise<string> => {
+const transcribeWithDeepgram = async (audioPath: string): Promise<string> => {
+  const apiKey = process.env.DEEPGRAM_API_KEY;
+  if (!apiKey) throw new Error("DEEPGRAM_API_KEY が未設定です");
+
+  const file = await fs.readFile(audioPath);
+  const blob = new Blob([file], { type: "audio/mpeg" });
+  const form = new FormData();
+  form.append("audio", blob, path.basename(audioPath));
+
+  const response = await fetch(
+    "https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&punctuate=true&detect_language=true",
+    {
+      method: "POST",
+      headers: { Authorization: `Token ${apiKey}` },
+      body: form
+    }
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Deepgram失敗: ${response.status} ${body}`);
+  }
+
+  const json = (await response.json()) as {
+    results?: { channels?: Array<{ alternatives?: Array<{ transcript?: string }> }> };
+  };
+
+  const text = json.results?.channels?.[0]?.alternatives?.[0]?.transcript?.trim();
+  if (!text) throw new Error("Deepgram結果が空です");
+  return text;
+};
+
+const transcribeWithOpenAI = async (audioPath: string): Promise<string> => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY が未設定です");
 
@@ -23,6 +55,16 @@ const transcribeWithWhisper = async (audioPath: string): Promise<string> => {
   });
 
   return transcript.text;
+};
+
+const transcribeAudio = async (audioPath: string): Promise<{ text: string; provider: string }> => {
+  try {
+    const text = await transcribeWithDeepgram(audioPath);
+    return { text, provider: "deepgram" };
+  } catch {
+    const text = await transcribeWithOpenAI(audioPath);
+    return { text, provider: "openai" };
+  }
 };
 
 const downloadAudioWithYtDlp = async (url: string): Promise<string> => {
@@ -58,7 +100,7 @@ export const fetchYouTubeTranscript = async (url: string): Promise<TranscriptRes
     };
   } catch {
     const audioPath = await downloadAudioWithYtDlp(url);
-    const text = await transcribeWithWhisper(audioPath);
+    const { text, provider } = await transcribeAudio(audioPath);
 
     return {
       provider: "youtube",
@@ -66,7 +108,7 @@ export const fetchYouTubeTranscript = async (url: string): Promise<TranscriptRes
       language: "auto",
       text,
       segments: [{ start: 0, dur: 0, text }],
-      warnings: ["字幕を取得できなかったため、音声抽出+Whisperでフォールバックしました。"]
+      warnings: [`字幕を取得できなかったため、${provider}でフォールバックしました。`]
     };
   }
 };
@@ -74,7 +116,7 @@ export const fetchYouTubeTranscript = async (url: string): Promise<TranscriptRes
 export const fetchXTranscript = async (url: string): Promise<TranscriptResult> => {
   try {
     const audioPath = await downloadAudioWithYtDlp(url);
-    const text = await transcribeWithWhisper(audioPath);
+    const { text, provider } = await transcribeAudio(audioPath);
 
     return {
       provider: "x",
@@ -82,7 +124,7 @@ export const fetchXTranscript = async (url: string): Promise<TranscriptResult> =
       language: "auto",
       text,
       segments: [{ start: 0, dur: 0, text }],
-      warnings: ["Xは取得制約により失敗する場合があります。"]
+      warnings: [`Xは取得制約により失敗する場合があります。転写: ${provider}`]
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "X文字起こしに失敗しました";
@@ -92,7 +134,7 @@ export const fetchXTranscript = async (url: string): Promise<TranscriptResult> =
       language: "auto",
       text: "X動画の取得または文字起こしに失敗しました。",
       segments: [{ start: 0, dur: 0, text: "失敗" }],
-      warnings: [message, "yt-dlpとOPENAI_API_KEYを確認してください。"]
+      warnings: [message, "yt-dlpとDEEPGRAM_API_KEY（またはOPENAI_API_KEY）を確認してください。"]
     };
   }
 };
