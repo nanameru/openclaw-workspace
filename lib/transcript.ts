@@ -128,13 +128,17 @@ export const fetchXTranscript = async (url: string): Promise<TranscriptResult> =
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "X文字起こしに失敗しました";
+    const isYtDlpMissing = message.includes("ENOENT") || message.includes("yt-dlp");
+
     return {
       provider: "x",
       sourceUrl: url,
       language: "auto",
       text: "X動画の取得または文字起こしに失敗しました。",
       segments: [{ start: 0, dur: 0, text: "失敗" }],
-      warnings: [message, "yt-dlpとDEEPGRAM_API_KEY（またはOPENAI_API_KEY）を確認してください。"]
+      warnings: isYtDlpMissing
+        ? ["現在のサーバー環境でX動画取得設定が不足しています。運用環境にyt-dlpを導入して再実行してください。"]
+        : ["X動画の取得または文字起こしに失敗しました。時間をおいて再試行してください。"]
     };
   }
 };

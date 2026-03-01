@@ -25,10 +25,7 @@ export const POST = async (req: Request) => {
       ? await fetchYouTubeTranscript(normalized)
       : await fetchXTranscript(normalized);
 
-    const saved = await saveTranscriptIfConfigured({ result });
-    if (!saved.saved) {
-      result.warnings = [...result.warnings, `保存スキップ: ${saved.reason}`];
-    }
+    await saveTranscriptIfConfigured({ result });
 
     return NextResponse.json(result);
   } catch (error) {
