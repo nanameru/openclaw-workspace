@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { detectProvider, safeUrl } from "@/lib/url";
 import { fetchYouTubeTranscript, fetchXTranscript } from "@/lib/transcript";
 
+export const runtime = "nodejs";
+
 type Body = { url?: string };
 
 export const POST = async (req: Request) => {

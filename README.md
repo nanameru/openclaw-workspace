@@ -14,6 +14,20 @@ npm install
 npm run dev
 ```
 
+## 環境変数
+`.env.local` を作成して設定:
+```bash
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+CLERK_SECRET_KEY=...
+OPENAI_API_KEY=...
+# Convex（導入時）
+NEXT_PUBLIC_CONVEX_URL=...
+```
+
+## Xフォールバック要件
+- `yt-dlp` をOSにインストールしてPATHを通す
+- `OPENAI_API_KEY` を設定（Whisper転写用）
+
 ## 法務・規約注意
 - 著作権侵害用途は禁止
 - 各プラットフォームの利用規約を順守

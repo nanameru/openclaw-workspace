@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
 type ApiResult = {
   text: string;
   warnings: string[];
@@ -54,7 +56,14 @@ const HomePage = () => {
 
   return (
     <main className="mx-auto max-w-4xl p-6">
-      <h1 className="text-2xl font-bold">動画リンク文字起こし（YouTube / X）</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">動画リンク文字起こし（YouTube / X）</h1>
+        <div>
+          <span className="rounded border px-3 py-1 text-xs text-slate-600">
+            {clerkEnabled ? "認証ON" : "認証OFF（環境変数未設定）"}
+          </span>
+        </div>
+      </div>
       <p className="mt-2 text-sm text-slate-600">独自実装版MVP。利用規約・著作権を遵守してご利用ください。</p>
 
       <div className="mt-6 rounded-xl bg-white p-4 shadow">
