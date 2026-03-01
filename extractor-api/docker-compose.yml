@@ -1,0 +1,18 @@
+services:
+  extractor-api:
+    build: .
+    container_name: jp-transcript-extractor-api
+    restart: always
+    environment:
+      PORT: 8080
+      EXTRACTOR_API_TOKEN: ${EXTRACTOR_API_TOKEN}
+      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
