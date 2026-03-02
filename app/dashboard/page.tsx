@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GeneratorPanel } from "@/components/generator-panel";
 
 const kpis = [
   { label: "生成中", value: "3" },
@@ -83,14 +84,7 @@ const DashboardPage = () => {
               </div>
             </section>
 
-            <section className="rounded-xl border border-zinc-200 bg-white p-4">
-              <h2 className="font-semibold">クイック操作</h2>
-              <div className="mt-3 space-y-2">
-                <button className="w-full rounded-md bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">新しい画像をアップロード</button>
-                <button className="w-full rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm">生成プロンプトを編集</button>
-                <button className="w-full rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm">書き出し設定を確認</button>
-              </div>
-            </section>
+            <GeneratorPanel />
           </div>
         </section>
       </div>
