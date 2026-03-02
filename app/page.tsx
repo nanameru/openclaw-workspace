@@ -1,155 +1,110 @@
-"use client";
+import Link from "next/link";
 
-import { useState } from "react";
-
-type ApiResult = {
-  provider: "youtube" | "x" | "tiktok" | "instagram" | "facebook";
-  text: string;
-  warnings: string[];
-  sourceUrl: string;
-};
-
-const providers = ["YouTube", "Instagram", "TikTok", "X", "Facebook", "Vimeo", "Loom"];
+const features = [
+  {
+    title: "1枚の写真から短い動画へ",
+    body: "人物・風景写真をアップロードすると、動き付きのショート動画を自動生成します。",
+  },
+  {
+    title: "日本語プロンプト最適化",
+    body: "日本語の意図を崩さず、自然な動きになるように自動で補正します。",
+  },
+  {
+    title: "SNS投稿まで最短",
+    body: "縦動画(9:16)・正方形(1:1)に対応。書き出し後すぐに投稿できます。",
+  },
+];
 
 const HomePage = () => {
-  const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [result, setResult] = useState<ApiResult | null>(null);
-
-  const run = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/transcript", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url })
-      });
-
-      const data = (await res.json()) as ApiResult & { error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "失敗しました");
-        return;
-      }
-
-      setResult(data);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const copy = async () => {
-    if (!result?.text) return;
-    await navigator.clipboard.writeText(result.text);
-  };
-
-  const download = () => {
-    if (!result?.text) return;
-    const blob = new Blob([result.text], { type: "text/plain;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${result.provider}-transcript.txt`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-
   return (
-    <main className="min-h-screen bg-[#f7f7f8] text-slate-900">
-      <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-8">
-            <p className="text-lg font-semibold">JP Transcript</p>
-            <nav className="hidden gap-6 text-sm text-slate-600 md:flex">
-              <span>機能</span>
-              <span>ソリューション</span>
-              <span>リソース</span>
-              <span>料金</span>
-            </nav>
+    <main className="min-h-screen bg-zinc-50 text-zinc-900">
+      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
+          <Link href="/" className="text-lg font-semibold text-violet-700">Photo to Life JP</Link>
+          <nav className="hidden items-center gap-6 text-sm text-zinc-600 md:flex">
+            <a href="#features">機能</a>
+            <a href="#pricing">料金</a>
+            <a href="#faq">FAQ</a>
+          </nav>
+          <div className="flex items-center gap-2">
+            <Link href="/help" className="rounded-md px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">ヘルプ</Link>
+            <Link href="/dashboard" className="rounded-md bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">作成を開始</Link>
           </div>
-          <button className="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white">始める</button>
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-4 pb-16 pt-10">
-        <h1 className="text-center text-3xl font-bold tracking-tight md:text-4xl">URLを貼るだけで即文字起こし</h1>
-        <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-slate-600 md:text-base">
-          動画・投稿リンクからテキストを抽出。コピー、TXT出力までワンストップで完結。
-        </p>
-
-        <div className="mx-auto mt-8 grid max-w-3xl grid-cols-3 gap-4 text-center">
-          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-            <p className="text-3xl font-bold text-fuchsia-500">95%+</p>
-            <p className="mt-1 text-xs text-slate-500">文字起こし精度</p>
-          </div>
-          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-            <p className="text-3xl font-bold text-fuchsia-500">&lt;1min</p>
-            <p className="mt-1 text-xs text-slate-500">平均処理時間</p>
-          </div>
-          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-            <p className="text-3xl font-bold text-fuchsia-500">200万+</p>
-            <p className="mt-1 text-xs text-slate-500">文字起こし実行数</p>
+      <section className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-16 md:grid-cols-2 md:py-24">
+        <div>
+          <p className="mb-3 inline-flex rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">日本向けローカライズ版</p>
+          <h1 className="text-3xl font-bold tracking-tight md:text-5xl">思い出の1枚を、動き出す動画に。</h1>
+          <p className="mt-4 text-zinc-600">bringmyphototolifeの体験をベースに、日本語UI・日本向け導線・法務ページを整えた独自実装です。</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/dashboard" className="rounded-md bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700">無料で試す</Link>
+            <Link href="/about" className="rounded-md border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-100">サービス詳細</Link>
           </div>
         </div>
 
-        <div className="mx-auto mt-10 max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
-          <div className="mx-auto inline-flex rounded-xl bg-slate-100 p-1 text-sm">
-            <button className="rounded-lg px-4 py-2 text-slate-500">音声ファイル</button>
-            <button className="rounded-lg bg-white px-4 py-2 font-medium shadow">リンク</button>
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-slate-200 p-5">
-            <p className="text-center text-base font-semibold">動画またはポストのリンクを貼り付け</p>
-            <p className="mt-1 text-center text-sm text-slate-500">{providers.join("、")} など対応</p>
-
-            <input
-              className="mt-4 h-12 w-full rounded-xl border border-slate-300 px-4 text-sm outline-none focus:border-fuchsia-400"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://x.com/user/status/..."
-            />
-
-            <select className="mt-3 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-fuchsia-400" defaultValue="auto">
-              <option value="auto">自動検出（推奨）</option>
-              <option value="ja">日本語</option>
-              <option value="en">英語</option>
-            </select>
-
-            <button
-              className="mt-4 h-12 w-full rounded-full bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={run}
-              disabled={loading || !url}
-            >
-              {loading ? "文字起こし中..." : "文字起こし開始"}
-            </button>
-
-            {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
-          </div>
-        </div>
-
-        {result ? (
-          <section className="mx-auto mt-8 max-w-4xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-slate-600">Source: {result.sourceUrl}</p>
-              <div className="flex gap-2">
-                <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm" onClick={copy}>Copy</button>
-                <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm" onClick={download}>Export TXT</button>
-              </div>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-semibold text-zinc-700">生成ジョブ（サンプル）</p>
+          <div className="mt-4 space-y-3 text-sm">
+            <div className="rounded-lg border border-zinc-200 p-3">
+              <p className="font-medium">家族写真 → シネマ風</p>
+              <p className="mt-1 text-xs text-zinc-500">ステータス: 生成中 / 残り約 48秒</p>
             </div>
-
-            {result.warnings?.length ? (
-              <ul className="mt-3 list-disc rounded-lg border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800">
-                {result.warnings.map((warning) => <li key={warning}>{warning}</li>)}
-              </ul>
-            ) : null}
-
-            <pre className="mt-3 max-h-[520px] overflow-auto rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-800">
-              {result.text}
-            </pre>
-          </section>
-        ) : null}
+            <div className="rounded-lg border border-zinc-200 p-3">
+              <p className="font-medium">旅先の風景 → ドローン風パン</p>
+              <p className="mt-1 text-xs text-zinc-500">ステータス: 完了 / MP4(9:16)</p>
+            </div>
+            <div className="rounded-lg border border-zinc-200 p-3">
+              <p className="font-medium">プロフィール写真 → 微笑みアニメーション</p>
+              <p className="mt-1 text-xs text-zinc-500">ステータス: レビュー待ち</p>
+            </div>
+          </div>
+        </div>
       </section>
+
+      <section id="features" className="mx-auto w-full max-w-6xl px-4 py-12">
+        <h2 className="text-2xl font-bold">主要機能</h2>
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {features.map((item) => (
+            <article key={item.title} className="rounded-xl border border-zinc-200 bg-white p-5">
+              <h3 className="font-semibold">{item.title}</h3>
+              <p className="mt-2 text-sm text-zinc-600">{item.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="pricing" className="mx-auto w-full max-w-6xl px-4 py-12">
+        <h2 className="text-2xl font-bold">料金プラン（税込）</h2>
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {[
+            ["Starter", "¥0"],
+            ["Creator", "¥1,980 / 月"],
+            ["Studio", "要お問い合わせ"],
+          ].map(([name, price]) => (
+            <div key={name} className="rounded-xl border border-zinc-200 bg-white p-5">
+              <p className="font-semibold">{name}</p>
+              <p className="mt-2 text-2xl font-bold">{price}</p>
+              <Link href="/terms" className="mt-4 inline-block text-sm text-violet-700">利用条件を見る →</Link>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer className="border-t border-zinc-200 bg-white">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-zinc-600">
+          <p>© Photo to Life JP</p>
+          <div className="flex flex-wrap gap-4">
+            <Link href="/about">about</Link>
+            <Link href="/help">help</Link>
+            <Link href="/terms">terms</Link>
+            <Link href="/privacy">privacy</Link>
+            <Link href="/legal">legal</Link>
+            <Link href="/status">status</Link>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 };

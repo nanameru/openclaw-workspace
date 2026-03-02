@@ -3,14 +3,16 @@ import type { Metadata } from "next";
 import { AppProviders } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "動画リンク文字起こし | JP Transcript",
-  description: "YouTube / X のURLから文字起こしを取得"
+  title: "Photo to Life JP | 写真を動画に",
+  description: "写真をアップロードして、AIで動きのあるショート動画を生成する日本向けサービス",
 };
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="ja">
-      <body><AppProviders>{children}</AppProviders></body>
+      <body>
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   );
 };
