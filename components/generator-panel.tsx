@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 
 type JobStatus = "queued" | "running" | "done" | "failed";
+type Seconds = "5" | "10" | "15";
+type Resolution = "720p" | "1080p" | "4k";
 
 const statusLabel: Record<JobStatus, string> = {
   queued: "待機中",
@@ -11,15 +13,36 @@ const statusLabel: Record<JobStatus, string> = {
   failed: "失敗"
 };
 
+const resolutionFactor: Record<Resolution, number> = {
+  "720p": 1.0,
+  "1080p": 1.8,
+  "4k": 3.5
+};
+
+const secondsFactor: Record<Seconds, number> = {
+  "5": 1.0,
+  "10": 1.7,
+  "15": 2.4
+};
+
 export const GeneratorPanel = () => {
   const [image, setImage] = useState<File | null>(null);
   const [prompt, setPrompt] = useState("被写体に自然なカメラズームを追加");
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "1:1" | "16:9">("9:16");
+  const [seconds, setSeconds] = useState<Seconds>("5");
+  const [resolution, setResolution] = useState<Resolution>("720p");
+  const [highQuality, setHighQuality] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [status, setStatus] = useState<JobStatus | null>(null);
   const [error, setError] = useState<string>("");
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const estimatedCredits = useMemo(() => {
+    const base = 10;
+    const q = highQuality ? 1.2 : 1.0;
+    return Math.round(base * resolutionFactor[resolution] * secondsFactor[seconds] * q);
+  }, [resolution, seconds, highQuality]);
 
   const canSubmit = useMemo(() => !!image && !!prompt.trim() && !loading, [image, prompt, loading]);
 
@@ -53,11 +76,9 @@ export const GeneratorPanel = () => {
   };
 
   const pollJob = async (id: string) => {
-    let active = true;
-
-    while (active) {
+    while (true) {
       const res = await fetch(`/api/generate/${id}`, { cache: "no-store" });
-      const data = (await res.json()) as { status?: JobStatus; outputUrl?: string | null; error?: string };
+      const data = (await res.json()) as { status?: JobStatus; outputUrl?: string | null; error?: string; errorMessage?: string | null };
 
       if (!res.ok || !data.status) {
         setError(data.error ?? "ジョブ状態の取得に失敗しました。");
@@ -71,14 +92,12 @@ export const GeneratorPanel = () => {
       }
 
       if (data.status === "failed") {
-        setError("動画生成に失敗しました。入力内容を見直して再試行してください。");
+        setError(data.errorMessage ?? "動画生成に失敗しました。入力内容を見直して再試行してください。");
         return;
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1200));
     }
-
-    active = false;
   };
 
   return (
@@ -112,6 +131,37 @@ export const GeneratorPanel = () => {
           <option value="1:1">1:1（正方形）</option>
           <option value="16:9">16:9（横動画）</option>
         </select>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <select
+            value={resolution}
+            onChange={(e) => setResolution(e.target.value as Resolution)}
+            className="w-full rounded-md border border-zinc-300 px-3 py-2"
+          >
+            <option value="720p">720p</option>
+            <option value="1080p">1080p</option>
+            <option value="4k">4K</option>
+          </select>
+
+          <select
+            value={seconds}
+            onChange={(e) => setSeconds(e.target.value as Seconds)}
+            className="w-full rounded-md border border-zinc-300 px-3 py-2"
+          >
+            <option value="5">5秒</option>
+            <option value="10">10秒</option>
+            <option value="15">15秒</option>
+          </select>
+        </div>
+
+        <label className="flex items-center gap-2 text-zinc-700">
+          <input type="checkbox" checked={highQuality} onChange={(e) => setHighQuality(e.target.checked)} />
+          高精細モード（+20%）
+        </label>
+
+        <p className="rounded-md bg-violet-50 px-3 py-2 text-sm font-semibold text-violet-800">
+          この設定の想定消費: 約 {estimatedCredits} クレジット
+        </p>
 
         <button
           onClick={startJob}
