@@ -1,12 +1,14 @@
-# JP Link Transcript (MVP)
+# Photo to Life JP (MVP)
 
-YouTube / X の動画URLから文字起こしを取得する日本向けMVPです。
+Pruna AI P-Video（Replicate）を基盤に、写真を短い動画へ変換する日本向けSaaSです。  
+※ 参照サービスの完コピではなく、機能同等の独自UI/独自文言で実装しています。
 
 ## 実装状況
-- ✅ YouTube URL 文字起こし（`youtube-transcript`）
-- ⚠️ X URL はベータ（プラットフォーム制約により段階導入）
-- ✅ Copy / Export TXT
-- ✅ 必須ページ: about/help/terms/privacy/legal/status
+- ✅ 日本語LP / ダッシュボードUI
+- ✅ 画像アップロード → 生成ジョブ作成
+- ✅ ジョブ状態ポーリング（queued/running/done/failed）
+- ✅ 日本語エラー分類（認証失敗・混雑・容量超過など）
+- ✅ 法務ページ（about/help/terms/privacy/legal/status）
 
 ## 開発
 ```bash
@@ -14,29 +16,31 @@ npm install
 npm run dev
 ```
 
-## 環境変数
+## 必須環境変数
 `.env.local` を作成して設定:
+```bash
+REPLICATE_API_TOKEN=...
+REPLICATE_MODEL_VERSION=... # Pruna AI P-Video の model version
+```
+
+任意（既存機能）:
 ```bash
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
 CLERK_SECRET_KEY=...
-DEEPGRAM_API_KEY=... # 推奨（コスト優先）
-OPENAI_API_KEY=...   # Deepgram失敗時のフォールバック
-# Convex（導入時）
+DEEPGRAM_API_KEY=...
+OPENAI_API_KEY=...
 NEXT_PUBLIC_CONVEX_URL=...
 ```
 
-## Xフォールバック要件
-- `yt-dlp` をOSにインストールしてPATHを通す
-- `OPENAI_API_KEY` を設定（Whisper転写用）
+## API
+- `POST /api/generate`
+  - multipart: `image`, `prompt`, `aspectRatio`
+- `GET /api/generate/:jobId`
+  - ジョブ状態取得
+- `GET /api/generate/:jobId/download`
+  - MVPではダウンロード導線（本番では署名付きURLに置換予定）
 
-## 法務・規約注意
-- 著作権侵害用途は禁止
-- 各プラットフォームの利用規約を順守
-- Xは仕様変更で取得失敗の可能性あり
-
-## 今後（本番化）
-1. Clerk認証
-2. Convex保存
-3. Whisper fallback (yt-dlp経由)
-4. 課金とクレジット制
-5. ログ/監視
+## 注意事項
+- 権利侵害画像のアップロードは禁止
+- 生成結果の利用責任はユーザーに帰属
+- 生成動画は原則、速度変更や追加編集を行わない出力を前提

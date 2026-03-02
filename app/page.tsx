@@ -35,9 +35,9 @@ const HomePage = () => {
 
       <section className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-16 md:grid-cols-2 md:py-24">
         <div>
-          <p className="mb-3 inline-flex rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">日本向けローカライズ版</p>
-          <h1 className="text-3xl font-bold tracking-tight md:text-5xl">思い出の1枚を、動き出す動画に。</h1>
-          <p className="mt-4 text-zinc-600">bringmyphototolifeの体験をベースに、日本語UI・日本向け導線・法務ページを整えた独自実装です。</p>
+          <p className="mb-3 inline-flex rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">Pruna AI P-Video / Replicate 基盤</p>
+          <h1 className="text-3xl font-bold tracking-tight md:text-5xl">写真を、生き生きと動く動画へ。</h1>
+          <p className="mt-4 text-zinc-600">週末に作れる速度で、思い出をよみがえらせるSaaS。日本語UIで、画像アップロードから動画生成まで迷わず使えます。</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/dashboard" className="rounded-md bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700">無料で試す</Link>
             <Link href="/about" className="rounded-md border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-100">サービス詳細</Link>
@@ -61,6 +61,12 @@ const HomePage = () => {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-6xl px-4 pb-2">
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          ※ 生成動画は速度変更・編集を行っていないオリジナル出力を表示します。
+        </p>
       </section>
 
       <section id="features" className="mx-auto w-full max-w-6xl px-4 py-12">
