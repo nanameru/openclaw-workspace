@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "X JP Translator",
+  "version": "1.0.0",
+  "description": "単一X投稿の本文を日本語翻訳し、画像はそのまま表示します。",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://publish.twitter.com/*",
+    "https://api.openai.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
