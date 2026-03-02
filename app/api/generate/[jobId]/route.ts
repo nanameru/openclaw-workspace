@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getVideoJob } from "@/lib/video-jobs";
+import { refreshVideoJob } from "@/lib/video-jobs";
 
 export const runtime = "nodejs";
 
@@ -7,7 +7,7 @@ export const GET = async (
   _req: Request,
   { params }: { params: { jobId: string } }
 ) => {
-  const job = getVideoJob(params.jobId);
+  const job = await refreshVideoJob(params.jobId);
   if (!job) {
     return NextResponse.json({ error: "ジョブが見つかりません。" }, { status: 404 });
   }
