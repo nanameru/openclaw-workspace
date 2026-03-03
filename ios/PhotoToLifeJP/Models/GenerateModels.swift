@@ -33,3 +33,12 @@ struct JobStatusResponse: Decodable {
     let outputUrl: String?
     let errorMessage: String?
 }
+
+struct JobHistoryItem: Identifiable {
+    let id: String
+    let estimatedCredits: Int
+    let createdAt: Date
+    var status: String
+    var outputUrl: String?
+    var errorMessage: String?
+}

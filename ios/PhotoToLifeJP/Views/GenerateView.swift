@@ -68,7 +68,42 @@ struct GenerateView: View {
                     }
 
                     if let err = viewModel.errorMessage {
-                        Text(err).foregroundStyle(.red)
+                        Text(err)
+                            .foregroundStyle(.red)
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.red.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+
+                    if !viewModel.history.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("生成履歴")
+                                .font(.headline)
+                            ForEach(viewModel.history.prefix(10)) { item in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("\(item.id)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text("状態: \(item.status) / 想定: \(item.estimatedCredits)クレジット")
+                                        .font(.subheadline)
+                                    if let message = item.errorMessage {
+                                        Text("エラー: \(message)")
+                                            .font(.caption)
+                                            .foregroundStyle(.red)
+                                    }
+                                    if let output = item.outputUrl, let url = URL(string: output) {
+                                        Link("結果を開く", destination: url)
+                                            .font(.caption)
+                                    }
+                                }
+                                .padding(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.gray.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                        }
+                        .padding(.top, 8)
                     }
                 }
                 .padding()

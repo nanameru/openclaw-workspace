@@ -15,6 +15,7 @@ final class GenerateViewModel: ObservableObject {
     @Published var outputURL: String?
     @Published var errorMessage: String?
     @Published var isLoading = false
+    @Published var history: [JobHistoryItem] = []
 
     private let apiClient: APIClient
 
@@ -51,10 +52,21 @@ final class GenerateViewModel: ObservableObject {
                 estimatedCredits: estimatedCredits
             )
             jobId = response.jobId
-            statusText = response.status
+            statusText = normalizedStatus(response.status)
+            history.insert(
+                JobHistoryItem(
+                    id: response.jobId,
+                    estimatedCredits: estimatedCredits,
+                    createdAt: Date(),
+                    status: normalizedStatus(response.status),
+                    outputUrl: nil,
+                    errorMessage: nil
+                ),
+                at: 0
+            )
             await pollStatus(jobId: response.jobId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = normalizeError(error.localizedDescription)
         }
 
         isLoading = false
@@ -64,20 +76,66 @@ final class GenerateViewModel: ObservableObject {
         for _ in 0..<60 {
             do {
                 let s = try await apiClient.fetchJobStatus(jobId: jobId)
-                statusText = s.status
+                let jpStatus = normalizedStatus(s.status)
+                statusText = jpStatus
+                updateHistory(jobId: jobId, status: jpStatus, outputUrl: s.outputUrl, errorMessage: s.errorMessage)
+
                 if s.status == "done" {
                     outputURL = s.outputUrl
                     return
                 }
                 if s.status == "failed" {
-                    errorMessage = s.errorMessage ?? "生成に失敗しました"
+                    let message = normalizeError(s.errorMessage ?? "生成に失敗しました")
+                    errorMessage = message
+                    updateHistory(jobId: jobId, status: "失敗", outputUrl: s.outputUrl, errorMessage: message)
                     return
                 }
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = normalizeError(error.localizedDescription)
+                updateHistory(jobId: jobId, status: "失敗", outputUrl: nil, errorMessage: errorMessage)
                 return
             }
             try? await Task.sleep(for: .seconds(1.2))
         }
+
+        errorMessage = "タイムアウトしました。時間を置いて再確認してください。"
+        updateHistory(jobId: jobId, status: "失敗", outputUrl: nil, errorMessage: errorMessage)
+    }
+
+    private func updateHistory(jobId: String, status: String, outputUrl: String?, errorMessage: String?) {
+        guard let index = history.firstIndex(where: { $0.id == jobId }) else { return }
+        history[index].status = status
+        history[index].outputUrl = outputUrl
+        history[index].errorMessage = errorMessage
+    }
+
+    private func normalizedStatus(_ status: String) -> String {
+        switch status.lowercased() {
+        case "queued": return "待機中"
+        case "starting", "processing", "running": return "生成中"
+        case "done", "succeeded": return "完了"
+        case "failed", "canceled": return "失敗"
+        default: return status
+        }
+    }
+
+    private func normalizeError(_ raw: String) -> String {
+        let lower = raw.lowercased()
+        if lower.contains("401") || lower.contains("403") {
+            return "認証エラーです。APIキー設定を確認してください。"
+        }
+        if lower.contains("429") {
+            return "現在混雑しています。少し待ってから再実行してください。"
+        }
+        if lower.contains("413") {
+            return "画像サイズが大きすぎます。10MB以下で再試行してください。"
+        }
+        if lower.contains("timed out") || lower.contains("timeout") {
+            return "通信がタイムアウトしました。ネットワーク状況を確認してください。"
+        }
+        if lower.contains("failed to parse") || lower.contains("decode") {
+            return "サーバー応答の解析に失敗しました。"
+        }
+        return raw
     }
 }
