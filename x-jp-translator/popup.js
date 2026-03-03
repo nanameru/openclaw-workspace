@@ -11,6 +11,22 @@ const setStatus = (text) => {
   statusEl.textContent = text;
 };
 
+const setBusy = (busy) => {
+  runBtn.disabled = busy;
+  runBtn.textContent = busy ? "処理中..." : "取得して翻訳";
+};
+
+const isValidTweetUrl = (input) => {
+  try {
+    const url = new URL(input);
+    const isXHost = url.hostname === "x.com" || url.hostname === "twitter.com" || url.hostname === "www.twitter.com";
+    const hasStatusPath = /\/status\/\d+/.test(url.pathname);
+    return isXHost && hasStatusPath;
+  } catch {
+    return false;
+  }
+};
+
 const extractFromOEmbedHtml = (html) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
@@ -90,6 +106,12 @@ runBtn.addEventListener("click", async () => {
     return;
   }
 
+  if (!isValidTweetUrl(tweetUrl)) {
+    setStatus("X投稿URL（.../status/数字）を入力してください。");
+    return;
+  }
+
+  setBusy(true);
   setStatus("取得中...");
   resultEl.style.display = "none";
 
@@ -112,6 +134,8 @@ runBtn.addEventListener("click", async () => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "失敗しました";
     setStatus(message);
+  } finally {
+    setBusy(false);
   }
 });
 

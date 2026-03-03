@@ -1,12 +1,24 @@
 {
   "manifest_version": 3,
   "name": "X JP Translator",
-  "version": "1.0.0",
-  "description": "単一X投稿の本文を日本語翻訳し、画像はそのまま表示します。",
+  "version": "1.1.0",
+  "description": "X投稿の本文を日本語翻訳し、画像はそのまま表示します。",
   "permissions": ["storage"],
   "host_permissions": [
     "https://publish.twitter.com/*",
-    "https://api.openai.com/*"
+    "https://api.openai.com/*",
+    "https://x.com/*",
+    "https://twitter.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
   ],
   "action": {
     "default_popup": "popup.html"
