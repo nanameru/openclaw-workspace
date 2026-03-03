@@ -16,6 +16,20 @@ SwiftUI + MVVM で、既存Web API（`/api/generate`）に接続するiOS MVP雛
 APIClient(baseURL: URL(string: "https://your-domain.com")!)
 ```
 
+## Xcodeプロジェクト化（macOS）
+このディレクトリは XcodeGen 前提です。
+
+1. `brew install xcodegen`
+2. `cd ios/PhotoToLifeJP`
+3. `bash scripts/bootstrap-macos.sh`
+4. `open PhotoToLifeJP.xcodeproj`
+
+## 実機ビルド手順
+1. Xcodeで `PhotoToLifeJP.xcodeproj` を開く
+2. Signing & Capabilities で Team を設定
+3. iPhoneを接続して実機を選択
+4. Product > Run
+
 ## 備考
 - Gemini CLIでデザイン案取得を試みましたが、実行時点ではモデル容量不足(429)で失敗。
-- そのため現時点はWeb版UIをベースにiOSへ最適化した実装です。
+- 現時点はWeb版UIをベースにiOSへ最適化した実装です。

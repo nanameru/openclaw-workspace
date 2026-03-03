@@ -1,0 +1,33 @@
+name: PhotoToLifeJP
+options:
+  bundleIdPrefix: com.nanameru
+configs:
+  Debug: debug
+  Release: release
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+    PRODUCT_BUNDLE_IDENTIFIER: com.nanameru.phototolifejp
+packages: {}
+targets:
+  PhotoToLifeJP:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: .
+        excludes:
+          - README.md
+          - project.yml
+          - scripts
+    settings:
+      base:
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        DEVELOPMENT_TEAM: ""
+    scheme:
+      testTargets: []
+      gatherCoverageData: false
