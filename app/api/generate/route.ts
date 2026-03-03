@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { createVideoJob } from "@/lib/video-jobs";
+import { saveBillingLog } from "@/lib/billing-store";
 
 const isAllowedAspectRatio = (value: string): value is "9:16" | "1:1" | "16:9" => {
   return value === "9:16" || value === "1:1" || value === "16:9";
+};
+
+const isAllowedResolution = (value: string): value is "720p" | "1080p" | "4k" => {
+  return value === "720p" || value === "1080p" || value === "4k";
+};
+
+const isAllowedSeconds = (value: number): value is 5 | 10 | 15 => {
+  return value === 5 || value === 10 || value === 15;
 };
 
 const toDataUrl = async (file: File): Promise<string> => {
@@ -19,6 +28,10 @@ export const POST = async (req: Request) => {
     const file = formData.get("image");
     const prompt = String(formData.get("prompt") ?? "").trim();
     const aspectRatioRaw = String(formData.get("aspectRatio") ?? "9:16");
+    const resolutionRaw = String(formData.get("resolution") ?? "720p");
+    const secondsRaw = Number(formData.get("seconds") ?? 5);
+    const highQuality = String(formData.get("highQuality") ?? "false") === "true";
+    const estimatedCreditsRaw = Number(formData.get("estimatedCredits") ?? 0);
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "画像ファイルを選択してください。" }, { status: 400 });
@@ -44,6 +57,18 @@ export const POST = async (req: Request) => {
       return NextResponse.json({ error: "画面比率の指定が不正です。" }, { status: 400 });
     }
 
+    if (!isAllowedResolution(resolutionRaw)) {
+      return NextResponse.json({ error: "解像度の指定が不正です。" }, { status: 400 });
+    }
+
+    if (!isAllowedSeconds(secondsRaw)) {
+      return NextResponse.json({ error: "秒数の指定が不正です。" }, { status: 400 });
+    }
+
+    if (!Number.isFinite(estimatedCreditsRaw) || estimatedCreditsRaw <= 0) {
+      return NextResponse.json({ error: "クレジット見積りが不正です。" }, { status: 400 });
+    }
+
     const imageDataUrl = await toDataUrl(file);
 
     const job = await createVideoJob({
@@ -51,6 +76,15 @@ export const POST = async (req: Request) => {
       prompt,
       aspectRatio: aspectRatioRaw,
       imageDataUrl
+    });
+
+    await saveBillingLog({
+      jobId: job.id,
+      estimatedCredits: Math.round(estimatedCreditsRaw),
+      resolution: resolutionRaw,
+      seconds: secondsRaw,
+      highQuality,
+      aspectRatio: aspectRatioRaw
     });
 
     return NextResponse.json({

@@ -1,15 +1,8 @@
-import { defineSchema, defineTable } from "convex/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-export default defineSchema({
-  transcripts: defineTable({
-    userId: v.optional(v.string()),
-    sourceUrl: v.string(),
-    provider: v.string(),
-    text: v.string(),
-    createdAt: v.number()
-  }),
-  billingLogs: defineTable({
+export const createLog = mutation({
+  args: {
     jobId: v.string(),
     estimatedCredits: v.number(),
     resolution: v.union(v.literal("720p"), v.literal("1080p"), v.literal("4k")),
@@ -18,5 +11,15 @@ export default defineSchema({
     aspectRatio: v.union(v.literal("9:16"), v.literal("1:1"), v.literal("16:9")),
     userId: v.optional(v.string()),
     createdAt: v.number()
-  })
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("billingLogs", args);
+  }
+});
+
+export const listRecent = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("billingLogs").order("desc").take(50);
+  }
 });

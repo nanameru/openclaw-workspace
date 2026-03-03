@@ -57,6 +57,10 @@ export const GeneratorPanel = () => {
       formData.append("image", image);
       formData.append("prompt", prompt.trim());
       formData.append("aspectRatio", aspectRatio);
+      formData.append("resolution", resolution);
+      formData.append("seconds", seconds);
+      formData.append("highQuality", String(highQuality));
+      formData.append("estimatedCredits", String(estimatedCredits));
 
       const res = await fetch("/api/generate", { method: "POST", body: formData });
       const data = (await res.json()) as { jobId?: string; status?: JobStatus; error?: string };
