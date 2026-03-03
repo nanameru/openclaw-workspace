@@ -21,6 +21,7 @@ final class GenerateViewModel: ObservableObject {
 
     init(apiClient: APIClient = APIClient()) {
         self.apiClient = apiClient
+        self.history = HistoryStore.load()
     }
 
     var estimatedCredits: Int {
@@ -64,6 +65,8 @@ final class GenerateViewModel: ObservableObject {
                 ),
                 at: 0
             )
+            trimHistoryIfNeeded()
+            persistHistory()
             await pollStatus(jobId: response.jobId)
         } catch {
             errorMessage = normalizeError(error.localizedDescription)
@@ -91,15 +94,17 @@ final class GenerateViewModel: ObservableObject {
                     return
                 }
             } catch {
-                errorMessage = normalizeError(error.localizedDescription)
-                updateHistory(jobId: jobId, status: "失敗", outputUrl: nil, errorMessage: errorMessage)
+                let message = normalizeError(error.localizedDescription)
+                errorMessage = message
+                updateHistory(jobId: jobId, status: "失敗", outputUrl: nil, errorMessage: message)
                 return
             }
             try? await Task.sleep(for: .seconds(1.2))
         }
 
-        errorMessage = "タイムアウトしました。時間を置いて再確認してください。"
-        updateHistory(jobId: jobId, status: "失敗", outputUrl: nil, errorMessage: errorMessage)
+        let timeout = "タイムアウトしました。時間を置いて再確認してください。"
+        errorMessage = timeout
+        updateHistory(jobId: jobId, status: "失敗", outputUrl: nil, errorMessage: timeout)
     }
 
     private func updateHistory(jobId: String, status: String, outputUrl: String?, errorMessage: String?) {
@@ -107,6 +112,17 @@ final class GenerateViewModel: ObservableObject {
         history[index].status = status
         history[index].outputUrl = outputUrl
         history[index].errorMessage = errorMessage
+        persistHistory()
+    }
+
+    private func trimHistoryIfNeeded() {
+        if history.count > 50 {
+            history = Array(history.prefix(50))
+        }
+    }
+
+    private func persistHistory() {
+        HistoryStore.save(history)
     }
 
     private func normalizedStatus(_ status: String) -> String {

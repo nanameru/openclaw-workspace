@@ -34,7 +34,7 @@ struct JobStatusResponse: Decodable {
     let errorMessage: String?
 }
 
-struct JobHistoryItem: Identifiable {
+struct JobHistoryItem: Identifiable, Codable {
     let id: String
     let estimatedCredits: Int
     let createdAt: Date
